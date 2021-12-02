@@ -5,10 +5,27 @@
 
 \section{A WebRTC protokoll}\label{sec:a-webrtc-protokoll}
 
+Napjainkban a SaaS (Software-as-a-Service) típusú szolgáltatásokra nagy mértékben jellemző a centralizáltság, elosztott
+rendszerek esetében is: a felhasználók az esetek többségében egy menedzselt környezetben futó, globálisan
+elérhető szerveren (legyen ez egy load balancer vagy egy egyszerű ingress-jellegű reverse proxy) keresztül lépnek
+interakcióba a rendszerrel.
+A centralizált jelleg a minőségbiztosítás megkönnyítése mellett hordoz egy elhanyagolhatatlan negatívumot is: ha az előbb
+említett globálisan elérhető szerver meghibásodik, akkor a végfelhasználók nem tudják elérni a rendszert, hiába működik
+ez hibátlanul.
+
+Az IPv6 bevezetése és folyamatos elterjedése ugyanakkor lehetőséget biztosít arra, hogy másképp tekintsünk az internetre:
+egy olyan kommunikációs hálózat, ahol akár a végfelhasználók számítógépei is képesek közvetlenül egymással kommunikálni,
+NAT szüksége nélkül.
+
 A WebRTC (RFC 7478\cite{RFC_7478}) egy olyan kommunikációs protokoll, amely lehetővé teszi két vagy több résztvevő közötti hang- és
 videóhívások, illetve általános célú adatcsere megvalósítását egy köztes fél jelenléte nélkül.
 Mivel a videóhívások meglehetősen széles sávszélességet igényelhetnek, a protokoll csökkenti annak az esélyét,
 hogy egy köztes fél szűk keresztmetszetté váljon ennek végessége miatt.
+
+Az előző félév Önálló Laboratóriumának keretein belül is a WebRTC protokollal foglalkoztam, ahol az elosztott nyomkövetés
+problémájára kerestem egy alternatív megoldást.
+Ebben a dolgozatban a protokoll használata során implementálandó signaling folyamatra keresek egy decentralizált, köztes
+fél nélkül működő megoldást.
 
 A protokoll használata során az egyes felek lehetőség szerint közvetlenül egymással kommunikálnak, peer-to-peer módon.
 A kommunikációs csatorna az ICE (RFC 8445\cite{ICE}) protokoll használatával van felépítve, amely során a felek egy STUN (RFC 5389)
