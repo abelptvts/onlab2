@@ -3,7 +3,7 @@
 %----------------------------------------------------------------------------
 
 
-\section{A WebRTC protokoll}\label{sec:a-webrtc-protokoll}
+\section{Motiváció}\label{sec:motiváció}
 
 Napjainkban a SaaS (Software-as-a-Service) típusú szolgáltatásokra nagy mértékben jellemző a centralizáltság, elosztott
 rendszerek esetében is: a felhasználók az esetek többségében egy menedzselt környezetben futó, globálisan
@@ -26,6 +26,9 @@ Az előző félév Önálló Laboratóriumának keretein belül is a WebRTC prot
 problémájára kerestem egy alternatív megoldást.
 Ebben a dolgozatban a protokoll használata során implementálandó signaling folyamatra keresek egy decentralizált, köztes
 fél nélkül működő megoldást.
+
+
+\section{A WebRTC protokoll}\label{sec:a-webrtc-protokoll}
 
 A protokoll használata során az egyes felek lehetőség szerint közvetlenül egymással kommunikálnak, peer-to-peer módon.
 A kommunikációs csatorna az ICE (RFC 8445\cite{ICE}) protokoll használatával van felépítve, amely során a felek egy STUN (RFC 5389)
