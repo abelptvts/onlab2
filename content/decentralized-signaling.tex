@@ -1,0 +1,112 @@
+\chapter{Decentralizált signaling}\label{ch:decentralizált-signaling}
+
+
+\section{Elvárások}\label{sec:elvarasok}
+
+A signaling szolgáltatás helyettesítésének érdekében ez az egység ennek az elvárásait tárgyalja.
+
+\paragraph{Felelősség}
+
+A signaling szolgáltatás fő felelőssége az ICE candidate csomagok fogadása és irányított (vagy adott esetben broadcast-olt)
+továbbítása a többi fél felé.
+Ahhoz, hogy a szolgáltatás eljuttasson egy csomagot a célhoz, egy \emph{kétirányú} kommunikációs csatornára van szüksége.
+
+\paragraph{Csomagok mérete}
+
+A csomagok ICE candidate-ek, amik szöveges adatként vannak reprezentálva.
+Egy ilyen csomag alacsony szintű hálózati adatokból áll, a következő bejegyzés egy példa erre:
+\begin{lstlisting}[label={lst:lstlisting}]
+    a=candidate:1 1 UDP 2130706431 192.168.1.102 1816 typ host
+\end{lstlisting}
+Ahogy a fenti példa mutatja, az ilyen csomagok mérete elenyésző.
+
+\paragraph{Csomagok számossága}
+
+Mivel a signaling folyamat használatára csupán a WebRTC kapcsolat felépítése és esetleg újraépítése során kerül sor, a
+csomagok várható számának aránya a kommunikációban résztvevő felek számával meglehetősen alacsony.
+
+\paragraph{Átviteli sebesség}
+
+Az átviteli sebesség nagy mértékben függ attól, hogy mire és milyen körülmények között alkalmazza egy adott rendszer
+a WebRTC protokollt.
+A dolgozat keretein belül 10 másodperc alatti átlagos válaszidőt várunk el a signaling során.
+
+
+\section{Elosztott hash-táblák}\label{sec:elosztott-hash-táblák}
+
+Az elosztott hash-táblák olyan elosztott rendszerek, amelyek kulcs-érték párok decentralizált tárolására biztosítanak
+lehetőséget.
+Az ilyen rendszerekben résztvevő csomópontok csupán a teljes adathalmaz egy bizonyos részét tárolják, nem kizárólagos
+módon, tehát az adathalmaz egy adott részét több csomópont is tárolhatja.
+Lekérdezés során amennyiben egy adott csomópont nem tárol egy adott kulcs-érték párt, lekérdezi ezt a hozzá fizikailag, vagy
+valamilyen más metrika (például az egyedi azonosítók közti különbség) szerint közel levő csomópontoktól.
+
+A lekérdezések a DHT felépítésétől függően több algoritmus alkalmazásával megvalósíthatók, ilyenek például a Koorde,
+Kademlia vagy a Tapestry.
+Kademlia használata esetén egy lekérdezés komplexitása $\mathcal{O}(\log{}n)$, ahol $n$ a résztvevő csomópontok száma.
+A felépítésük és az alapvető koncepcióik miatt a DHT-k extrém méretekig skálázhatóak.
+
+A BEP44\cite{BEP} protokoll lehetővé teszi azt, hogy az elosztott hash-táblákat ne csak kulcs-érték párok tárolására használhassuk,
+hanem tetszőleges adatot elérhetővé tudjunk tenni ezek segítségével.
+A protokoll használata esetén a változhatatlan adatok kulcsa maga az adat SHA1 hash-je lesz, mivel ilyen esetben nincs
+szükség a tartalom aláírására és az író fél azonosítására — a lekérdező fél tudja, hogy mit szeretne megkapni.
+Változékony adatok esetében, viszont az az elvárt működés, hogy a kulcs módosítása nélkül változhasson az adat.
+Ebben az esetben az adat kulcsa az ító fél publikus kulcsának és egy opcionális salt érték konkatenációjából tevődik
+össze, így egy csomópont több kulcs alá is publikálhat értékeket és az olvasó feleknek elég csak az író publikus kulcsát
+ismerniük a lekérdezéshez.
+Egy írási művelet az író fél privát kulcsával van aláírva.
+
+A konzisztencia megőrzésének érdekében a csomópontok kötelesek egy szekvencia számot megadni megadni minden íráskor és
+módosításkor.
+Ez a szám monoton nő minden frissítéskor és szerepel az aláírásban.
+Adatok írása során a csomópontok csak akkor tárolják a módosításokat, ha a lokális szekvencia számuk kisebb mint az íráskor
+megadott.
+Lekérdezés során az olvasó opcionálisan megadhatja az adat utolsó ismert szekvencia számát.
+Ebben az esetben a többi csomópont csak akkor ad vissza adatok, ha saját szekvencia számuk nagyobb vagy egyenlő az olvasóénál.
+A következő bejegyzés változékony adatok írását mutatja be:
+
+\begin{lstlisting}[label={lst:lstlisting2}]
+{
+    "a": {
+        "cas": <optional expected seq-nr (int)>,
+        "id": <20 byte id of sending node (string)>,
+        "k": <ed25519 public key (32 bytes string)>,
+        "salt": <optional salt to be appended to "k" when hashing (string)>
+        "seq": <monotonically increasing sequence number (integer)>,
+        "sig": <ed25519 signature (64 bytes string)>,
+        "token": <write-token (string)>,
+        "v": <any bencoded type, whose encoded size < 1000>
+    },
+    "t": <transaction-id (string)>,
+    "y": "q",
+    "q": "put"
+}
+\end{lstlisting}
+
+A decentralizált signaling szempontjából a BEP44 protokoll legfőbb hátrányai a következők:
+\begin{itemize}
+    \item Egy adott kulcs alatt tárolt adat maximális mérete 1000 byte.
+    \item Egy adott kulcs alatt tárolt adatot csak az a csomópont módosíthat, amelyik eredetileg elérhetővé tette.
+\end{itemize}
+
+A korlátolt méret hátránya megkerülésére többféle eljárás létezik, például az adatok csonkolása és láncolt lista alkalmazása.
+
+A bemutatott BEP44 protokoll lehetőséget ad WebRTC signaling megvalósítására centralizált köztes
+fél bevezetése nélkül.
+
+
+\section{Két résztvevő közti WebRTC csatorna felépítése}\label{sec:két-peer-közti-webrtc-csatorna-felépítése}
+
+Kezdetben mindkét résztvevő csatlakozik egy publikus tracker-ökből\footnote{Olyan publikusan elérhető számítógépek,
+    amelyek egy olyan DHT-t alkotnak, amiben bármit tudunk ideiglenesen tárolni.} álló elosztott hash-táblába.
+Mindkét csomópont ismeri a másik publikus kulcsát, ezáltal hozzáférnek bármihez, amit a másik publikál.
+
+A csomópontok két-két \emph{kupacba} (továbbiakban bucket) írnak adatot: \emph{offers}, ami a csatlakozáshoz szükséges
+WebRTC offer-eket tartalmazza, és \emph{ICE candidates}, ami a kapcsolat felépítéséhez szükség ICE candidate-eket tartalmazza.
+Mindkét csomópont időnként lekérdezi a másik két bucket-jének tartalmát a publikus tracker-ökön keresztül, ezáltal
+értesülve az esetleges hálózati változásokról.
+
+Az egyik fél kezdeményezi a kapcsolat felépítését egy kezdeti WebRTC offer létrehozásával és tárolásával.
+A másik fél ezt észleli, létrehoz egy választ az ajánlatra és elkezdődik az ICE candidate-ek cseréje.
+Miután ez megtörtént, a kezdeményező fél nyit egy WebRTC datachannel-t (RFC 8831\cite{RFC_8831}), erről a másik (már WebRTC-n keresztül) értesül.
+Ezzel létrejön egy duplex csatorna a két fél között.
